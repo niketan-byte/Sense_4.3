@@ -129,8 +129,11 @@
 
 #define MSM_PMEM_ADSP_SIZE         0x8600000
 #define MSM_PMEM_AUDIO_SIZE        0x4CF000
-
-#define MSM_PMEM_SIZE 0x0 
+#ifdef CONFIG_FB_MSM_HDMI_AS_PRIMARY
+#define MSM_PMEM_SIZE 0x8200000 
+#else
+#define MSM_PMEM_SIZE 0x8200000 
+#endif
 
 #ifdef CONFIG_MSM_MULTIMEDIA_USE_ION
 #define HOLE_SIZE		0x20000
@@ -140,7 +143,7 @@
 #define MSM_PMEM_KERNEL_EBI1_SIZE  0x6400000
 #endif
 
-#define MSM_ION_KGSL_SIZE	0x0
+#define MSM_ION_KGSL_SIZE	0x6400000
 #define MSM_ION_SF_SIZE		(MSM_PMEM_SIZE + MSM_ION_KGSL_SIZE)
 #define MSM_ION_MM_FW_SIZE	(0x200000 - HOLE_SIZE) 
 #define MSM_ION_MM_SIZE		MSM_PMEM_ADSP_SIZE
@@ -1072,8 +1075,6 @@ struct pm8921_bms_battery_data  bms_battery_data_id_1 = {
 	.rbatt_est_ocv_lut	= &rbatt_est_ocv_id_1,
 	.default_rbatt_mohm	= 250,
 	.delta_rbatt_mohm	= 0,
-	.level_ocv_update_stop_begin	= 10,
-	.level_ocv_update_stop_end		= 20,
 };
 
 
@@ -1187,8 +1188,6 @@ struct pm8921_bms_battery_data  bms_battery_data_id_2 = {
 	.rbatt_est_ocv_lut	= &rbatt_est_ocv_id_2,
 	.default_rbatt_mohm	= 250,
 	.delta_rbatt_mohm	= 0,
-	.level_ocv_update_stop_begin	= 10,
-	.level_ocv_update_stop_end		= 20,
 };
 
 static struct htc_battery_cell htc_battery_cells[] = {
@@ -3380,17 +3379,16 @@ static struct cm3629_platform_data cm36282_pdata_sk2 = {
 	.ps1_thd_set = 0x15,
 	.ps1_thd_no_cal = 0x90,
 	.ps1_thd_with_cal = 0xD,
-	.ps_th_add = 5,
 	.ps_calibration_rule = 1,
-	.ps_conf1_val = CM3629_PS_DR_1_40 | CM3629_PS_IT_1_6T |
-			CM3629_PS1_PERS_2,
+	.ps_conf1_val = CM3629_PS_DR_1_320 | CM3629_PS_IT_1_6T |
+			CM3629_PS1_PERS_3,
 	.ps_conf2_val = CM3629_PS_ITB_1 | CM3629_PS_ITR_1 |
 			CM3629_PS2_INT_DIS | CM3629_PS1_INT_DIS,
 	.ps_conf3_val = CM3629_PS2_PROL_32,
 	.dark_level = 1,
-	.dynamical_threshold = 1,
-	.mapping_table = cm3629_mapping_table,
-	.mapping_size = ARRAY_SIZE(cm3629_mapping_table),
+        .dynamical_threshold = 1,
+        .mapping_table = cm3629_mapping_table,
+        .mapping_size = ARRAY_SIZE(cm3629_mapping_table),
 };
 
 
@@ -3730,6 +3728,27 @@ static struct platform_device msm_tsens_device = {
 
 static struct msm_thermal_data msm_thermal_pdata = {
 	.sensor_id = 0,
+#ifdef CONFIG_INTELLI_THERMAL
+        .poll_ms = 250,
+#ifdef CONFIG_CPU_OVERCLOCK
+        .limit_temp_degC = 70,
+#else
+        .limit_temp_degC = 60,
+#endif
+        .temp_hysteresis_degC = 10,
+        .freq_step = 2,
+        .freq_control_mask = 0xf,
+        .core_limit_temp_degC = 80,
+#else
+	.poll_ms = 1000,
+#ifdef CONFIG_CPU_OVERCLOCK
+	.limit_temp = 70,
+#else
+	.limit_temp = 60,
+#endif
+	.temp_hysteresis = 10,
+	.limit_freq = 918000,
+#endif
 };
 
 static int __init check_dq_setup(char *str)
@@ -3877,13 +3896,13 @@ static struct msm_rpmrs_platform_data msm_rpmrs_data __initdata = {
 		[MSM_RPMRS_VDD_MEM_RET_LOW]	= 750000,
 		[MSM_RPMRS_VDD_MEM_RET_HIGH]	= 750000,
 		[MSM_RPMRS_VDD_MEM_ACTIVE]	= 1050000,
-		[MSM_RPMRS_VDD_MEM_MAX]		= 1250000,
+		[MSM_RPMRS_VDD_MEM_MAX]		= 1150000,
 	},
 	.vdd_dig_levels = {
 		[MSM_RPMRS_VDD_DIG_RET_LOW]	= 500000,
 		[MSM_RPMRS_VDD_DIG_RET_HIGH]	= 750000,
 		[MSM_RPMRS_VDD_DIG_ACTIVE]	= 950000,
-		[MSM_RPMRS_VDD_DIG_MAX]		= 1250000,
+		[MSM_RPMRS_VDD_DIG_MAX]		= 1150000,
 	},
 	.vdd_mask = 0x7FFFFF,
 	.rpmrs_target_id = {
@@ -4640,7 +4659,6 @@ static struct platform_device *common_devices[] __initdata = {
 #endif
 	&apq_compr_dsp,
 	&apq_multi_ch_pcm,
-	&apq_lowlatency_pcm,
 };
 
 static struct platform_device *cdp_devices[] __initdata = {
@@ -5388,10 +5406,12 @@ static void __init m7_common_init(void)
 #ifdef CONFIG_SUPPORT_USB_SPEAKER
 	pm_qos_add_request(&pm_qos_req_dma, PM_QOS_CPU_DMA_LATENCY, PM_QOS_DEFAULT_VALUE);
 #endif
-	if (get_kernel_flag() & KERNEL_FLAG_PM_MONITOR) {
+#if 1 
+	if (get_kernel_flag() & KERNEL_FLAG_PM_MONITOR){
 		htc_monitor_init();
 		htc_pm_monitor_init();
 	}
+#endif
 }
 
 static void __init m7_allocate_memory_regions(void)
@@ -5433,9 +5453,8 @@ static void __init m7_cdp_init(void)
 	set_input_event_min_freq_by_cpu(2, 1026000);
 	set_input_event_min_freq_by_cpu(3, 810000);
 	set_input_event_min_freq_by_cpu(4, 810000);
-#endif
 
-	
+#endif	
 	
 	if (!(board_mfg_mode() == 6 || board_mfg_mode() == 7))
 		m7_add_usb_devices();
