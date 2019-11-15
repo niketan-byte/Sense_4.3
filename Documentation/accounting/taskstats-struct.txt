@@ -1,7 +1,6 @@
 The struct taskstats
---------------------
 
-This document contains an explanation of the struct taskstats fields.
+This document contains an explanation about the struct taskstats fields.
 
 There are three different groups of fields in the struct taskstats:
 
@@ -90,11 +89,11 @@ struct taskstats {
 	 * available only if delay accounting is enabled, even though the last
 	 * few fields are not delays
 	 *
-	 * xxx_count is the number of delay values recorded
-	 * xxx_delay_total is the corresponding cumulative delay in nanoseconds
+	 * xx_count is the number of delay values recorded
+	 * xx_delay_total is the corresponding cumulative delay in nanoseconds
 	 *
-	 * xxx_delay_total wraps around to zero on overflow
-	 * xxx_count incremented regardless of overflow
+	 * xx_delay_total wraps around to zero on overflow
+	 * xx_count incremented regardless of overflow
 	 */
 
 	/* Delay waiting for cpu, while runnable
@@ -119,7 +118,7 @@ struct taskstats {
 	 * On some architectures, value will adjust for cpu time stolen
 	 * from the kernel in involuntary waits due to virtualization.
 	 * Value is cumulative, in nanoseconds, without a corresponding count
-	 * and wraps around to zero silently on overflow
+	 * and wraps around to zero silently on overflow.U
 	 */
 	__u64	cpu_run_real_total;
 
